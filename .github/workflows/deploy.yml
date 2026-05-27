@@ -1,0 +1,64 @@
+name: Deploy
+
+# Required repository secrets:
+#   DEPLOY_SSH_KEY  - private SSH key with access to the server
+#   DEPLOY_HOST     - server hostname or IP
+#   DEPLOY_USER     - SSH username
+#   DEPLOY_PATH     - absolute target directory on the server (e.g. /opt/quoty-bot)
+#   DEPLOY_PORT     - SSH port (optional, defaults to 22)
+#   DISCORD_TOKEN   - bot token
+#   CLIENT_ID       - application (client) id
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate .env from secrets
+        run: |
+          cat > .env <<EOF
+          DISCORD_TOKEN=${{ secrets.DISCORD_TOKEN }}
+          CLIENT_ID=${{ secrets.CLIENT_ID }}
+          EOF
+
+      - name: Set up SSH
+        env:
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -p "$DEPLOY_PORT" -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Sync files to server
+        env:
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude 'data' \
+            -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \
+            ./ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"
+
+      - name: Build, register commands, and restart
+        env:
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT || '22' }}
+        run: |
+          ssh -i ~/.ssh/id_deploy -p "$DEPLOY_PORT" \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "cd '${{ secrets.DEPLOY_PATH }}' && \
+             docker compose up -d --build --remove-orphans && \
+             docker compose run --rm quoty node src/deploy.js && \
+             docker image prune -f"

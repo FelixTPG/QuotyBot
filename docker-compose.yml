@@ -1,0 +1,10 @@
+services:
+  quoty:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - quoty_data:/app/data
+
+volumes:
+  quoty_data:
