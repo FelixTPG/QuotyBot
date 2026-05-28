@@ -59,7 +59,7 @@ export function buildFortuneMessage(fortune) {
     );
   }
 
-  components.push(
+  /*components.push(
     { type: ComponentType.TextDisplay, content: '-# Fortune' },
     { type: ComponentType.Separator, spacing: 1, divider: true },
     {
@@ -72,7 +72,7 @@ export function buildFortuneMessage(fortune) {
           .toJSON(),
       ],
     },
-  );
+  );*/
 
   return {
     flags: MessageFlags.IsComponentsV2,
