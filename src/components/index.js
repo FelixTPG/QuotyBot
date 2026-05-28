@@ -1,7 +1,7 @@
 import { MessageFlags } from 'discord.js';
 import { addPending, getAnyById, getRandom, setStatus } from '../database/index.js';
 import { isDashboardConfigured } from '../config.js';
-import { getFortune } from '../services/quotable.js';
+import { getFortune } from '../services/fortunes.js';
 import {
   buildFortuneMessage,
   buildQuoteMessage,
@@ -24,7 +24,7 @@ export async function handleComponent(interaction) {
           await interaction.showModal(buildSubmitModal());
           break;
         case 'fortune_new':
-          await handleFortuneReroll(interaction);
+          await interaction.update(buildFortuneMessage(getFortune()));
           break;
       }
     } else if (interaction.isModalSubmit() && interaction.customId === 'modal_submit_quote') {
@@ -35,20 +35,11 @@ export async function handleComponent(interaction) {
   }
 }
 
-async function handleFortuneReroll(interaction) {
-  try {
-    const fortune = await getFortune();
-    await interaction.update(buildFortuneMessage(fortune));
-  } catch (err) {
-    console.error('Fortune reroll failed:', err);
-    await interaction.reply({
-      content: "Couldn't reach the fortune service right now. Try again shortly.",
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-}
-
 async function handleSubmit(interaction) {
+  // Defer immediately — posting the review notification hits the network and
+  // could otherwise blow past the 3s interaction window.
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
   const text = interaction.fields.getTextInputValue('quote_text').trim();
   const author = interaction.fields.getTextInputValue('quote_author').trim();
   const id = addPending(text, author, interaction.user.id);
@@ -66,5 +57,5 @@ async function handleSubmit(interaction) {
     }
   }
 
-  await interaction.reply(buildSubmittedMessage(id, reviewing));
+  await interaction.editReply(buildSubmittedMessage(id, reviewing));
 }

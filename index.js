@@ -21,7 +21,7 @@ for (const file of commandFiles) {
   client.commands.set(cmd.data.name, cmd);
 }
 
-client.once('ready', c => console.log(`✓ ${c.user.tag} ready`));
+client.once('clientReady', c => console.log(`✓ ${c.user.tag} ready`));
 
 client.on('interactionCreate', async interaction => {
   if (interaction.isChatInputCommand()) {

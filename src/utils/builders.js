@@ -9,7 +9,6 @@ import {
   TextInputStyle,
 } from 'discord.js';
 
-const GREEN = 0x57f287;
 const AMBER = 0xfaa61a;
 
 export function buildQuoteMessage(quote, { showButtons = true } = {}) {
@@ -48,50 +47,47 @@ export function buildQuoteMessage(quote, { showButtons = true } = {}) {
 }
 
 export function buildFortuneMessage(fortune) {
+  // Fortunes are arbitrary text (quotes, proverbs, jokes), so show them as-is
+  // rather than forcing quote styling. Guard against the rare very long entry.
+  const text = fortune.text.length > 1500 ? `${fortune.text.slice(0, 1499)}…` : fortune.text;
+  const components = [{ type: ComponentType.TextDisplay, content: text }];
+
+  if (fortune.author) {
+    components.push(
+      { type: ComponentType.Separator, spacing: 1, divider: false },
+      { type: ComponentType.TextDisplay, content: `— **${fortune.author}**` },
+    );
+  }
+
+  components.push(
+    { type: ComponentType.TextDisplay, content: '-# Fortune' },
+    { type: ComponentType.Separator, spacing: 1, divider: true },
+    {
+      type: ComponentType.ActionRow,
+      components: [
+        new ButtonBuilder()
+          .setCustomId('fortune_new')
+          .setLabel('New fortune')
+          .setStyle(ButtonStyle.Secondary)
+          .toJSON(),
+      ],
+    },
+  );
+
   return {
     flags: MessageFlags.IsComponentsV2,
-    components: [
-      {
-        type: ComponentType.Container,
-        components: [
-          { type: ComponentType.TextDisplay, content: `*"${fortune.text}"*` },
-          { type: ComponentType.Separator, spacing: 1, divider: false },
-          { type: ComponentType.TextDisplay, content: `— **${fortune.author}**` },
-          { type: ComponentType.TextDisplay, content: '-# via Quotable' },
-          { type: ComponentType.Separator, spacing: 1, divider: true },
-          {
-            type: ComponentType.ActionRow,
-            components: [
-              new ButtonBuilder()
-                .setCustomId('fortune_new')
-                .setLabel('New fortune')
-                .setStyle(ButtonStyle.Secondary)
-                .toJSON(),
-            ],
-          },
-        ],
-      },
-    ],
+    allowedMentions: { parse: [] },
+    components: [{ type: ComponentType.Container, components }],
   };
 }
 
+// Plain ephemeral confirmation — sent via editReply after a deferred reply, so
+// it intentionally avoids Components V2 (the flag can't be added on edit).
 export function buildSubmittedMessage(id, pending) {
   return {
-    flags: MessageFlags.IsComponentsV2 | MessageFlags.Ephemeral,
-    components: [
-      {
-        type: ComponentType.Container,
-        accent_color: pending ? AMBER : GREEN,
-        components: [
-          {
-            type: ComponentType.TextDisplay,
-            content: pending
-              ? `**Quote #${id} submitted** — pending review. It'll appear once approved.`
-              : `**Quote #${id} added** — it's live!`,
-          },
-        ],
-      },
-    ],
+    content: pending
+      ? `**Quote #${id} submitted** — pending review. It'll appear once approved.`
+      : `**Quote #${id} added** — it's live!`,
   };
 }
 

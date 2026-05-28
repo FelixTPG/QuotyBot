@@ -9,7 +9,8 @@ and includes a Discord-OAuth2-protected **moderation dashboard**.
 
 - **`/quote`** — a random quote, or a specific one via the optional `id` argument.
 - **`/submit`** — submit a quote through a modal; submissions go into a review queue.
-- **`/fortune`** — a random quote pulled live from the [Quotable API](https://github.com/lukepeavey/quotable).
+- **`/fortune`** — a random fortune from a bundled offline collection in the classic
+  Unix *fortunes* format (the same source tradition as the Nothing "Fortunes" widget).
 - **Moderation dashboard** — a web UI where moderators (gated by a Discord role)
   review pending submissions and manage the full quote library (add / edit / delete).
 - **Components V2** throughout — containers, separators and buttons instead of
@@ -35,7 +36,7 @@ src/
   deploy.js              Slash-command registration
   config.js              Dashboard env detection
   database/index.js      SQLite schema, seeding, queries
-  services/quotable.js   Quotable API client (fortunes)
+  services/fortunes.js   Loads the local fortunes dataset (fortunes.txt)
   commands/              /quote, /submit, /fortune
   components/index.js    Button & modal handlers
   utils/builders.js      Components V2 message builders
@@ -67,7 +68,6 @@ cp .env.example .env
 | `DISCORD_TOKEN` | ✅ | Bot token |
 | `CLIENT_ID` | ✅ | Application (client) ID |
 | `DEV_GUILD_ID` | – | Register commands to one guild for **instant** updates (dev). Empty = global (can take ~1h to propagate). |
-| `QUOTABLE_API_URL` | – | Quotable base URL (default `https://api.quotable.io`; override for a mirror) |
 | `REVIEW_CHANNEL_ID` | – | Channel that receives a heads-up when a quote is submitted |
 | `DASHBOARD_URL` | – | Public dashboard URL, shown as a link button in the notification |
 | `CLIENT_SECRET` | dashboard | OAuth2 client secret |
@@ -135,5 +135,7 @@ Required repository secrets: `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
 
 - `node:sqlite` is currently an experimental Node feature and prints a warning on
   startup — this is expected.
-- The public Quotable API has had availability/SSL issues in the past. If `/fortune`
-  fails, point `QUOTABLE_API_URL` at a working mirror.
+- Fortunes live in [`src/services/fortunes.txt`](src/services/fortunes.txt) in the
+  Unix *fortune* format (entries separated by a `%` line, optional `-- Author`).
+  Add your own or drop in files from the [bmc/fortunes](https://github.com/bmc/fortunes)
+  database (CC BY 4.0).
