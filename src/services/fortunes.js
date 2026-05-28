@@ -20,10 +20,27 @@ function parseEntry(block) {
   // Attribution lines start with a dash run — any kind (-- , —, ―, –). \p{Pd}
   // covers every Unicode dash, so it works across fortune files.
   const attribution = lines.length > 1 && lines.at(-1).match(/^\s*\p{Pd}{1,3}\s+(.+)$/u);
-  if (attribution) {
-    return { text: lines.slice(0, -1).join('\n').trim(), author: attribution[1].trim() };
+  const body = (attribution ? lines.slice(0, -1) : lines).join('\n');
+  return { text: reflow(body).trim(), author: attribution ? attribution[1].trim() : null };
+}
+
+// Source files hard-wrap prose at a fixed margin. Reflow those wraps back into
+// continuous paragraphs, but keep intentional breaks: blank lines (paragraphs),
+// short lines (poems/lists) and aligned text (tables/ASCII art) are left as-is.
+function reflow(text) {
+  const lines = text.split('\n');
+  let out = lines[0] ?? '';
+  for (let i = 1; i < lines.length; i++) {
+    const prev = lines[i - 1];
+    const cur = lines[i];
+    const wrapped =
+      prev.trim().length >= 45 && // previous line ran to the margin
+      cur.trim().length > 0 && // current line has content
+      !/\S {2,}\S/.test(prev) && // neither line is intentionally spaced
+      !/\S {2,}\S/.test(cur);
+    out += wrapped ? ` ${cur.trim()}` : `\n${cur}`;
   }
-  return { text: block, author: null };
+  return out;
 }
 
 export function getFortune() {
