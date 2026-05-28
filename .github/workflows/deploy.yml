@@ -47,6 +47,8 @@ jobs:
         run: |
           rsync -az --delete \
             --exclude '.git' \
+            --exclude '.env' \
+            --exclude 'docker-compose.yml' \
             --exclude 'node_modules' \
             --exclude 'data' \
             -e "ssh -i ~/.ssh/id_deploy -p $DEPLOY_PORT" \

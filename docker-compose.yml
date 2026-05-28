@@ -1,8 +1,15 @@
 services:
   quoty:
     build: .
+    container_name: quoty-bot
     restart: unless-stopped
     env_file: .env
+    # The dashboard is reverse-proxy ready (it honours X-Forwarded-* headers).
+    # Published on localhost so a reverse proxy on the host (e.g. Caddy, nginx)
+    # can forward to it. If your proxy runs in another container, attach this
+    # service to its network or change the binding to "0.0.0.0:3000:3000".
+    ports:
+      - "127.0.0.1:${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
     volumes:
       - quoty_data:/app/data
 

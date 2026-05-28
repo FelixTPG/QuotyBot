@@ -4,11 +4,15 @@ import { readdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { handleComponent } from './src/components/index.js';
+import { startWebServer } from './src/web/server.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
+
+// Moderation dashboard runs alongside the bot (no-op if not configured).
+startWebServer();
 
 const commandFiles = readdirSync(join(__dirname, 'src/commands')).filter(f => f.endsWith('.js'));
 for (const file of commandFiles) {
